@@ -36,6 +36,32 @@ pipeline {
 				sh "mvn failsafe:integration-test failsafe:verify"//failsafe plugin is included
 			}
 		}
+
+		stage('Package'){
+			steps{
+				sh "mvn package -DskipTests"//creates JAR used to create docker image
+			}
+		}
+
+		stage('Build Docker Image'){
+			steps {
+				//docker build -t matteodce/currency-exchange-devops:$env.BUILD_TAG
+				script{
+					dockerImage = docker.build("matteodce/currency-exchange-devops:${env.BUILD_TAG}")//same, but done with a script
+				}
+			}
+		}
+
+		stage('Push Docker Image'){
+			steps {
+				script {
+					docker.withRegistry('', 'dockerhub'){//first field empty because default is dockerhub, second field is credentials ID
+						dockerImage.push();
+						dockerImage.push('latest');
+					}
+				}
+			}
+		}
 	}
 
 	post {
